@@ -20,14 +20,18 @@ typedef struct buddy_info
 
 } buddy_info;
 
-
+// interface
 void buddy_init(void *space, int block_num);
 void* buddy_alloc(int size);
 void buddy_free(void* block);
 
-block_info* remove_block(int size);
+// buddy helper functions (split blocks,merge blocks)
+block_info* remove_first_block(int size); //remove first block of specific size
+int remove_block(block_info* block); // remove specific block
 void add_block(void *start_adress, int size);
 void split(char *seg, int upper, int lower);
+block_info *find_buddy(block_info *start_adress);
+block_info* merge(block_info* block);
 
 // helper functions (powers of two,arithmetics)
 unsigned less_or_equal_pow_of_two(unsigned num);
