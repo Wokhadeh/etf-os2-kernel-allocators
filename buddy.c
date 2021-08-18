@@ -62,9 +62,10 @@ block_info *merge(block_info *block)
     int size = block->block_size;
     block_info *buddy_block = find_buddy(block);
     block_info *first = ((long long)block > (long long)buddy_block) ? buddy_block : block;
-    if(size==buddy_block->block_size){
+    if (size == buddy_block->block_size)
+    {
         if (remove_block(buddy_block))
-            {
+        {
             remove_block(block);
             add_block(first, size + 1);
         }
@@ -211,7 +212,7 @@ void *buddy_alloc(int size)
         printf("Not enough free space! \n");
         return NULL;
     }
-    return (void*)ret + sizeof(block_info);
+    return (void *)ret + sizeof(block_info);
 }
 
 void buddy_free(void *block)
