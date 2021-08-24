@@ -38,5 +38,5 @@ block_info *merge(block_info *block);
 unsigned less_or_equal_pow_of_two(unsigned num);
 unsigned greater_or_equal_pow_of_two(unsigned num);
 unsigned pow_of_two(unsigned num);
-
+_Bool is_power_of_two(unsigned x);
 void print_buddy();

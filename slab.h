@@ -4,19 +4,24 @@
 #define BLOCK_SIZE (4096)
 #define CACHE_L1_LINE_SIZE (64)
 #define PAGE_RESERVED_CACHES (7)
+#define EMPTY (0)
+#define PARTIALLY_FULL (1)
+#define FULL (2)
+#define NUMBER_OF_SMALL_MEMORY_BUFFERS (13)
 typedef struct slab
 {
     struct slab *next_slab;   //link to next slab
     struct kmem_cache_s* my_cache; //this slab's cache
+    int num_of_free_objects;
     void *slots_start_addres; //addres where begin slot space
-
+    void* free_slots; //start of free slots implicit list list
 } slab;
 
 typedef struct kmem_cache_s
 {
     //struct kmem_cache_s *next_cache; // link to next cache in list
-    slab *slabs;             // slabs of this cache
-    const char *name[30];    //objects type name
+    slab* slabs[3];             // slabs of this cache,empty 0,partially full 1, full 2
+    const char name[30];    //objects type name
     size_t object_size;      // size of objects belonging to this cache
     unsigned num_of_objects; // num of objects in slab
 
@@ -26,13 +31,16 @@ typedef struct kmem_cache_s
 
     void (*constructor)(void *); // object constructor
     void (*destructor)(void *);  // object destructor
+
+    int error_code; //error code
 } kmem_cache_t;
 
 typedef struct slab_info
 {
     unsigned max_number_of_caches;      // max size of array of caches
     unsigned number_of_caches;          //current number of caches
-    struct kmem_cache_s *arrayOfCaches; //array of caches
+    struct kmem_cache_s *array_of_caches; //array of caches
+    struct kmem_cache_s small_memory_buffers[NUMBER_OF_SMALL_MEMORY_BUFFERS]; // small memory buffers ( 2^5 B to 2^17 B)
 } slab_info;
 
 //interface
@@ -52,3 +60,5 @@ int kmem_cache_error(kmem_cache_t *cachep);             // Print error message
 //slab helper functions
 slab_info *get_slab_info(); //get slab_info*
 void allocate_slab(kmem_cache_t* cache); //allocate slab for specific cache
+void move_slab(slab* slab, int from, int to); // move slab from one list to another
+slab* find_objs_slab(kmem_cache_t* cachep, void* objp); // find slab to whom obj belongs
