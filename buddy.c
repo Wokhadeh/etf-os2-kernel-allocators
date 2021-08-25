@@ -1,7 +1,8 @@
 #include "buddy.h"
 
 void add_block(void *start_adress, int size) // size is pow of 2 of numbers of blocks in segment
-{
+{   
+
     if (size < 0)
     {
         printf("Error! Requested negative size! (adding block) \n");
@@ -35,6 +36,7 @@ int remove_block(block_info *block)
             tmp->next = NULL;
             return 1; // block found and removed!
         }
+
         tmp = tmp->next;
     }
     return 0; //block not found!
@@ -172,9 +174,9 @@ void buddy_init(void *space, int block_num)
     char *unused_space_start = (char *)((char*)buddy->buddy_start_adress + buddy->max_buddy_block_size * BLOCK_SIZE);
     while (buddy->unused_space)
     {
+        ((block_info*)unused_space_start)->next = buddy->blocks[pow_of_two(less_or_equal_pow_of_two(buddy->unused_space))].next;
+        ((block_info*)unused_space_start)->block_size = pow_of_two(less_or_equal_pow_of_two(buddy->unused_space));
         buddy->blocks[pow_of_two(less_or_equal_pow_of_two(buddy->unused_space))].next = (block_info *)unused_space_start;
-        ((block_info *)unused_space_start)->next = NULL;
-        ((block_info *)unused_space_start)->block_size = pow_of_two(less_or_equal_pow_of_two(buddy->unused_space));
         unused_space_start += less_or_equal_pow_of_two(buddy->unused_space) * BLOCK_SIZE;
         buddy->unused_space -= less_or_equal_pow_of_two(buddy->unused_space);
     }
@@ -189,6 +191,7 @@ void *buddy_alloc(int size)
         printf("Error! Requested negative size! \n");
         exit(-1);
     }
+    WaitForSingleObject(get_slab_info()->critical_section, INFINITE);
     unsigned actual_size = ((size + sizeof(buddy_info)) % BLOCK_SIZE) == 0 ? ((size + sizeof(buddy_info)) / BLOCK_SIZE)
                                                                            : ((size + sizeof(buddy_info)) / BLOCK_SIZE + 1); // adding size of block header to requested size and converting to num of blocks
     actual_size = pow_of_two(greater_or_equal_pow_of_two(actual_size));                                                      //converting to pow of 2 blocks
@@ -210,13 +213,17 @@ void *buddy_alloc(int size)
     if (ret == NULL)
     {
         printf("Not enough free space! \n");
+        ReleaseMutex(get_slab_info()->critical_section);
         return NULL;
     }
+    //print_buddy();
+    ReleaseMutex(get_slab_info()->critical_section);
     return (char*)ret + sizeof(block_info);
 }
 
 void buddy_free(void *block)
 {
+    WaitForSingleObject(get_slab_info()->critical_section, INFINITE);
     block_info *block_start = (((block_info *)block) - 1);
     add_block(block_start, block_start->block_size);
     //
@@ -225,6 +232,7 @@ void buddy_free(void *block)
     {
         tmp = merge(block_start);
     }
+    ReleaseMutex(get_slab_info()->critical_section);
 }
 _Bool is_power_of_two(unsigned x)
 {

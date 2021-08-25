@@ -1,6 +1,8 @@
 #pragma once
 // File: slab.h
 #include <stdlib.h>
+#include  <string.h>
+#include <windows.h>
 #define BLOCK_SIZE (4096)
 #define CACHE_L1_LINE_SIZE (64)
 #define PAGE_RESERVED_CACHES (7)
@@ -29,6 +31,8 @@ typedef struct kmem_cache_s
     unsigned unused_space; // size of unused space (bytes)
     unsigned alignment;    // alignment to L1 cache lines
 
+    _Bool requested_expansion; // did cache request new slabs?
+    
     void (*constructor)(void *); // object constructor
     void (*destructor)(void *);  // object destructor
 
@@ -39,6 +43,7 @@ typedef struct slab_info
 {
     unsigned max_number_of_caches;      // max size of array of caches
     unsigned number_of_caches;          //current number of caches
+    HANDLE critical_section;     // mutex to protect all functions
     struct kmem_cache_s *array_of_caches; //array of caches
     struct kmem_cache_s small_memory_buffers[NUMBER_OF_SMALL_MEMORY_BUFFERS]; // small memory buffers ( 2^5 B to 2^17 B)
 } slab_info;
